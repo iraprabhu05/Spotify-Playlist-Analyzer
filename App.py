@@ -3,7 +3,7 @@ import requests
 import urllib.parse
 import secrets
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 app.secret_key = secrets.token_hex(16)
 
 # Spotify API credentials
@@ -21,7 +21,7 @@ SCOPE = 'user-read-private user-read-email playlist-read-private user-top-read'
 
 @app.route('/')
 def index():
-    return render_template('templates/index.html')
+    return render_template('index.html')
 
 @app.route('/login')
 def login():
@@ -173,5 +173,6 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
 
 
