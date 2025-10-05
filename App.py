@@ -9,7 +9,7 @@ app.secret_key = secrets.token_hex(16)
 # Spotify API credentials
 CLIENT_ID = 'f35352ea09ec4a3db35281095f8e5f3d'
 CLIENT_SECRET = '99523569658b41c596afbd5b3b657974'
-REDIRECT_URI = 'http://127.0.0.1:5000/callback'
+REDIRECT_URI = 'https://spotify-playlist-analyzer-ira.vercel.app/callback'
 
 # API endpoints
 SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize'
@@ -173,6 +173,7 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
 
 
 
