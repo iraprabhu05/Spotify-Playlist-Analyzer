@@ -664,6 +664,8 @@
 </div>
 
 <script>
+    const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
+
     document.getElementById('analyzeBtn')?.addEventListener('click', analyzePlaylist);
     document.getElementById('dashboardBtn')?.addEventListener('click', fetchUserInsights);
     document.getElementById('playlistUrl')?.addEventListener('keypress', (e) => {
@@ -708,11 +710,11 @@
         if (!url) return showError('Please enter a playlist URL');
         
         try {
-            const authCheck = await fetch('/check_auth');
+            const authCheck = await fetch(`${BACKEND_URL}/check_auth`, { credentials: 'include' });
             if (!authCheck.ok) throw new Error('Failed to check authentication');
             const authData = await authCheck.json();
             if (!authData.authenticated) {
-                window.location.href = '/login';
+                window.location.href = `${BACKEND_URL}/login`;
                 return;
             }
         } catch (e) {
@@ -722,15 +724,16 @@
         toggleLoading(true, 'analyzeBtn');
         
         try {
-            const response = await fetch('/analyze', {
+            const response = await fetch(`${BACKEND_URL}/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ playlist_url: url })
             });
             
             if (!response.ok) {
                 const errorData = await response.json();
-                if (errorData.need_login) window.location.href = '/login';
+                if (errorData.need_login) window.location.href = `${BACKEND_URL}/login`;
                 else throw new Error(errorData.error || 'Failed to analyze playlist');
             }
             
@@ -748,11 +751,11 @@
         clearResults();
         
         try {
-            const authCheck = await fetch('/check_auth');
+            const authCheck = await fetch(`${BACKEND_URL}/check_auth`, { credentials: 'include' });
             if (!authCheck.ok) throw new Error('Failed to check authentication');
             const authData = await authCheck.json();
             if (!authData.authenticated) {
-                window.location.href = '/login';
+                window.location.href = `${BACKEND_URL}/login`;
                 return;
             }
         } catch (e) {
@@ -762,7 +765,7 @@
         toggleLoading(true, 'dashboardBtn');
         
         try {
-            const response = await fetch('/user_dashboard');
+            const response = await fetch(`${BACKEND_URL}/user_dashboard`, { credentials: 'include' });
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to fetch user insights');
@@ -832,76 +835,75 @@
     }
     
     function displayUserInsights(data) {
-    clearError();
-    const container = document.getElementById('userInsightsContainer');
-    const summaryBoxes = document.getElementById('summaryBoxes');
-    const insightsText = document.getElementById('insightsText');
-    
-    if (!container || !summaryBoxes || !insightsText) return;
-    
-    // ADD THIS CHECK HERE
-    if (!data || !data.user_stats) {
-        showError('Failed to load insights. Please login to Spotify first.');
-        return;
-    }
-    
-    const user = data.user_stats || {};
-    const insights = data.personalized_insights || [];
-        insightsText.innerHTML = insights.length
-          ? insights.map(i => `<p>${i}</p>`).join('')
-          : '';
+        clearError();
+        const container = document.getElementById('userInsightsContainer');
+        const summaryBoxes = document.getElementById('summaryBoxes');
+        const insightsText = document.getElementById('insightsText');
         
-        let topArtistsHTML = '';
-        const topArtists = user.top_artists || [];
-        if (topArtists.length > 0) {
-            topArtistsHTML = topArtists.slice(0,5).map((artist, idx) => {
-                const widthPercent = 100 - idx * 15;
-                return `
-                <div class="bar-item">
-                  <div class="bar-label">
-                    <span>${artist}</span>
-                    <span>#${idx + 1}</span>
-                  </div>
-                  <div class="bar-track"><div class="bar-fill" style="width: ${widthPercent}%;"></div></div>
-                </div>`;
-            }).join('');
-        } else {
-            topArtistsHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Artists data</p>';
+        if (!container || !summaryBoxes || !insightsText) return;
+        
+        if (!data || !data.user_stats) {
+            showError('Failed to load insights. Please login to Spotify first.');
+            return;
         }
         
-        let topTracksHTML = '';
-        const topTracks = user.top_tracks || [];
-        if (topTracks.length > 0) {
-            topTracksHTML = topTracks.map((t, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${t}</div>`).join('');
-        } else {
-            topTracksHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Tracks data</p>';
-        }
-        
-        let topGenresHTML = '';
-        const topGenres = user.top_genres || [];
-        if (topGenres.length > 0) {
-            topGenresHTML = topGenres.map((g, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${g}</div>`).join('');
-        } else {
-            topGenresHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Genres data</p>';
-        }
-        
-        summaryBoxes.innerHTML = `
-          <div class="summary-box">
-            <div class="summary-title">🎤 Top Artists</div>
-            <div class="bar-chart">${topArtistsHTML}</div>
-          </div>
-          <div class="summary-box">
-            <div class="summary-title">🎧 Top Tracks</div>
-            <div class="item-list">${topTracksHTML}</div>
-          </div>
-          <div class="summary-box">
-            <div class="summary-title"> Top Genres</div>
-            <div class="item-list">${topGenresHTML}</div>
-          </div>
-        `;
-        
-        container.style.display = 'block';
-        container.scrollIntoView({ behavior: 'smooth' });
+        const user = data.user_stats || {};
+        const insights = data.personalized_insights || [];
+            insightsText.innerHTML = insights.length
+              ? insights.map(i => `<p>${i}</p>`).join('')
+              : '';
+            
+            let topArtistsHTML = '';
+            const topArtists = user.top_artists || [];
+            if (topArtists.length > 0) {
+                topArtistsHTML = topArtists.slice(0,5).map((artist, idx) => {
+                    const widthPercent = 100 - idx * 15;
+                    return `
+                    <div class="bar-item">
+                      <div class="bar-label">
+                        <span>${artist}</span>
+                        <span>#${idx + 1}</span>
+                      </div>
+                      <div class="bar-track"><div class="bar-fill" style="width: ${widthPercent}%;"></div></div>
+                    </div>`;
+                }).join('');
+            } else {
+                topArtistsHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Artists data</p>';
+            }
+            
+            let topTracksHTML = '';
+            const topTracks = user.top_tracks || [];
+            if (topTracks.length > 0) {
+                topTracksHTML = topTracks.map((t, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${t}</div>`).join('');
+            } else {
+                topTracksHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Tracks data</p>';
+            }
+            
+            let topGenresHTML = '';
+            const topGenres = user.top_genres || [];
+            if (topGenres.length > 0) {
+                topGenresHTML = topGenres.map((g, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${g}</div>`).join('');
+            } else {
+                topGenresHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Genres data</p>';
+            }
+            
+            summaryBoxes.innerHTML = `
+              <div class="summary-box">
+                <div class="summary-title">🎤 Top Artists</div>
+                <div class="bar-chart">${topArtistsHTML}</div>
+              </div>
+              <div class="summary-box">
+                <div class="summary-title">🎧 Top Tracks</div>
+                <div class="item-list">${topTracksHTML}</div>
+              </div>
+              <div class="summary-box">
+                <div class="summary-title"> Top Genres</div>
+                <div class="item-list">${topGenresHTML}</div>
+              </div>
+            `;
+            
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth' });
     }
     
     function toggleLoading(isLoading, buttonId) {
@@ -910,30 +912,31 @@
         if (loadingEl) loadingEl.classList.toggle('active', isLoading);
         if (button) button.disabled = isLoading;
     }
-    // Check if user is logged in on page load
-async function checkLoginStatus() {
-    try {
-        const response = await fetch('/check_auth');
-        const data = await response.json();
-        
-        if (!data.authenticated) {
-            document.getElementById('dashboardBtn').style.display = 'none';
-            document.getElementById('loginBtn').style.display = 'block';
-        } else {
-            document.getElementById('dashboardBtn').style.display = 'block';
-            document.getElementById('loginBtn').style.display = 'none';
+
+    async function checkLoginStatus() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/check_auth`, { credentials: 'include' });
+            const data = await response.json();
+            
+            if (!data.authenticated) {
+                document.getElementById('dashboardBtn').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'block';
+            } else {
+                document.getElementById('dashboardBtn').style.display = 'block';
+                document.getElementById('loginBtn').style.display = 'none';
+            }
+        } catch (e) {
+            console.error('Auth check failed:', e);
         }
-    } catch (e) {
-        console.error('Auth check failed:', e);
     }
-}
 
-document.getElementById('loginBtn')?.addEventListener('click', () => {
-    window.location.href = '/login';
-});
+    document.getElementById('loginBtn')?.addEventListener('click', () => {
+        window.location.href = `${BACKEND_URL}/login`;
+    });
 
-// Check login status when page loads
-checkLoginStatus();
+    // Check login status when page loads
+    checkLoginStatus();
 </script>
 </body>
 </html>
+
