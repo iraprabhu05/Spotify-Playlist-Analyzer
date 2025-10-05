@@ -8,6 +8,7 @@ A sleek web app that lets you **analyze your Spotify playlists** and uncover ins
 ## Features
 
 ✅ **Playlist Analysis**  
+
 Paste any Spotify playlist URL to view:
 - Total tracks  
 - Average popularity  
@@ -17,6 +18,7 @@ Paste any Spotify playlist URL to view:
 
 
 ✅ **User Dashboard (Spotify Login Required)**  
+
 After logging in with Spotify, view personalized insights such as:
 - Top artists, tracks, and genres  
 - Listening summaries based on your history  
@@ -33,5 +35,5 @@ Frontend: HTML, CSS, JavaScript
 
 Backend: Python with Flask
 
-Spotify Web API for retrieving user and playlist data
+API: Spotify Web API for retrieving user and playlist data
 
