@@ -15,6 +15,7 @@ Paste any Spotify playlist URL to view:
 - Most popular track  
 - Most common artist  
 
+
 ✅ **User Dashboard (Spotify Login Required)**  
 After logging in with Spotify, view personalized insights such as:
 - Top artists, tracks, and genres  
@@ -22,10 +23,7 @@ After logging in with Spotify, view personalized insights such as:
 - Visualized bar charts and clean summaries  
 
 
-
-<p align="center">
-https://github.com/user-attachments/assets/03af0f15-e2ee-4663-a15c-3a4681ae8ea2
-</p>
+<img width="1920" height="862" alt="Spotify Playlist Analyzer - Google Chrome 05_10_2025 19_36_41" src="https://github.com/user-attachments/assets/11f85bf3-572e-44bc-9226-d6b59690a155" />
 
 ---
 
