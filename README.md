@@ -5,7 +5,7 @@ A sleek web app that lets you **analyze your Spotify playlists** and uncover ins
 
 ---
 
-## Features
+## Features:
 
 ✅ **Playlist Analysis**  
 
@@ -33,7 +33,7 @@ After logging in with Spotify, view personalized insights such as:
 
 ---
 
-## 🧠 Tech Stack
+## Tech Stack:
 
 Frontend: HTML, CSS, JavaScript
 
