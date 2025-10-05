@@ -18,6 +18,12 @@ SPOTIFY_API_BASE_URL = 'https://api.spotify.com/v1'
 
 # Scopes
 SCOPE = 'user-read-private user-read-email playlist-read-private user-top-read'
+import os
+
+@app.route('/debug')
+def debug():
+    exists = os.path.isfile('templates/index.html')
+    return f"index.html exists: {exists}"
 
 @app.route('/')
 def index():
@@ -173,3 +179,4 @@ def logout():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
