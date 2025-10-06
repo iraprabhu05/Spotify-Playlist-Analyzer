@@ -5,6 +5,8 @@ import urllib.parse
 import secrets
 import os
 
+
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 
@@ -21,7 +23,7 @@ CLIENT_SECRET = os.environ.get('CLIENT_SECRET', '99523569658b41c596afbd5b3b65797
 
 # Use environment variable for redirect URI
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://spotify-playlist-analyzer-ira.vercel.app')
-BACKEND_URL = os.environ.get('BACKEND_URL', 'http://localhost:5000')
+BACKEND_URL = os.environ.get('BACKEND_URL', 'https://spotify-playlist-analyzer-production.up.railway.app')
 REDIRECT_URI = f'{BACKEND_URL}/callback'
 
 # API endpoints
@@ -211,3 +213,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     # Bind to 0.0.0.0 so Railway can access it
     app.run(host='0.0.0.0', port=port, debug=False)
+
