@@ -5,7 +5,7 @@ A sleek web app that lets you analyze your Spotify playlists and uncover insight
 
 ---
 
-**Link:** [spotify-playlist-analyzer-ira.vercel.app](https://spotify-playlist-analyzer-ira.vercel.app/)
+**Link:**  [spotify-playlist-analyzer-ira.vercel.app](https://spotify-playlist-analyzer-ira.vercel.app/)
 
 ---
 ## Features:
