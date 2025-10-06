@@ -208,9 +208,17 @@ def logout():
     session.clear()
     return jsonify({'success': True, 'message': 'Logged out successfully'})
 
+@app.route('/debug')
+def debug():
+    return jsonify({
+        'REDIRECT_URI': REDIRECT_URI,
+        'BACKEND_URL': BACKEND_URL
+    })
+
 if __name__ == '__main__':
     # Get port from environment variable (Railway sets this)
     port = int(os.environ.get('PORT', 5000))
     # Bind to 0.0.0.0 so Railway can access it
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
