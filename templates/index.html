@@ -655,13 +655,13 @@
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
     
     // Store access token
-    let accessToken = null;
+    let accessToken = sessionStorage.getItem('spotify_access_token') || null;
 
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('access_token')) {
             accessToken = urlParams.get('access_token');
-            localStorage.setItem('spotify_access_token', accessToken);
+            sessionStorage.setItem('spotify_access_token', accessToken); // <-- Changed from localStorage
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         updateLoginUI();
@@ -686,30 +686,10 @@
 
     document.getElementById('analyzeBtn')?.addEventListener('click', analyzePlaylist);
     document.getElementById('dashboardBtn')?.addEventListener('click', fetchUserInsights);
-
-    // === LOGIN FLOW CHANGED FOR DESKTOP + MOBILE ===
     document.getElementById('loginBtn')?.addEventListener('click', () => {
-        const loginWindow = window.open(
-            `${BACKEND_URL}/login`,
-            '_blank',
-            'width=500,height=700'
-        );
-
-        window.addEventListener('message', function receiveToken(event) {
-            if (event.origin !== new URL(BACKEND_URL).origin) return;
-
-            const token = event.data?.access_token;
-            if (token) {
-                accessToken = token;
-                localStorage.setItem('spotify_access_token', accessToken);
-                updateLoginUI();
-            }
-
-            window.removeEventListener('message', receiveToken);
-        });
+        window.location.href = `${BACKEND_URL}/login`;
     });
-    // ==============================================
-
+    
     document.getElementById('playlistUrl')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') analyzePlaylist();
     });
@@ -772,7 +752,7 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 if (errorData.need_login) {
-                    localStorage.removeItem('spotify_access_token');
+                    sessionStorage.removeItem('spotify_access_token'); // <-- Changed from localStorage
                     accessToken = null;
                     updateLoginUI();
                     showError('Session expired. Please login again.');
@@ -811,7 +791,7 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 if (errorData.need_login) {
-                    localStorage.removeItem('spotify_access_token');
+                    sessionStorage.removeItem('spotify_access_token'); // <-- Changed from localStorage
                     accessToken = null;
                     updateLoginUI();
                     showError('Session expired. Please login again.');
