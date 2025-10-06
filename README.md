@@ -3,6 +3,7 @@
 
 A sleek web app that lets you **analyze your Spotify playlists** and uncover insights about your **music taste**, **top artists**, and **listening patterns**  all wrapped in a stunning UI.
 
+Link: spotify-playlist-analyzer-ira.vercel.app/
 ---
 
 ## Features:
@@ -44,3 +45,4 @@ Backend: Python with Flask
 
 API: Spotify Web API for retrieving user and playlist data
 
+## NOTE: Website Works only for allowed users as it is in deployment mode.
