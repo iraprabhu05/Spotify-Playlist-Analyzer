@@ -23,8 +23,7 @@ Paste any Spotify playlist URL to view:
 
 After logging in with Spotify, view personalized insights such as:
 - Top artists, tracks, and genres  
-- Listening summaries based on your history  
-- Visualized bar charts and clean summaries  
+- Listening summaries based on your history   
 
 
 
