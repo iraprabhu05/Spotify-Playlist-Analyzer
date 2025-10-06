@@ -416,7 +416,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-}
+        }
         .insights-header p {
             color: rgba(255, 255, 255, 0.5);
             font-size: 1.05rem;
@@ -427,7 +427,7 @@
              gap: 30px;
              margin-bottom: 40px;
              justify-content: center;
-}
+        }
         
         .summary-box {
             background: rgba(255, 255, 255, 0.08);
@@ -528,34 +528,24 @@
             transform: translateX(8px);
             border-left-color: #1DB954;
         }
-        .item-list::-webkit-scrollbar {
-            width: 10px;
-        }
-        .item-list::-webkit-scrollbar-thumb {
-            background: rgba(29,185,84,0.7);
-            border-radius: 10px;
-        }
-       .insights-text {
-           max-width: 900px; /* ADD THIS */
+        .insights-text {
+           max-width: 900px;
            margin: 0 auto 40px;
            padding: 0 20px;
        }
-
        .insights-text p {
-           font-size: 1.15rem; /* Slightly bigger */
+           font-size: 1.15rem;
            line-height: 1.9;
-           color: rgba(255, 255, 255, 0.9); /* Brighter */
+           color: rgba(255, 255, 255, 0.9);
            font-weight: bold;
-           margin-bottom: 20px; /* More space between */
-           padding: 22px 28px; /* More padding */
+           margin-bottom: 20px;
+           padding: 22px 28px;
            border-left: 5px solid #1DB954;
-           background: rgba(29, 185, 84, 0.12); /* Slightly more visible */
+           background: rgba(29, 185, 84, 0.12);
            border-radius: 0 14px 14px 0;
            transition: all 0.3s;
-           text-align: left; /* Keep text aligned left but container is centered */
-           
+           text-align: left;
        }
-
         .insights-text p:hover {
             background: rgba(29, 185, 84, 0.15);
             transform: translateX(8px);
@@ -581,7 +571,6 @@
             }
             .summary-boxes {
                 grid-template-columns: 1fr;
-                
             }
             .summary-box {
                 padding: 35px 28px;
@@ -626,7 +615,6 @@
         <button class="analyze-btn" id="analyzeBtn">Analyze Playlist</button>
         <button class="analyze-btn dashboard-btn" id="dashboardBtn">View My Listening Insights</button>
         <button class="analyze-btn" id="loginBtn" style="display:none; background: linear-gradient(135deg, #1ed760, #1DB954);">🔐 Login with Spotify</button>
-
     </div>
 
     <div class="error" id="error"></div>
@@ -665,9 +653,46 @@
 
 <script>
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
+    
+    // Store access token
+    let accessToken = null;
+
+    // Check if we have a token in URL params (from OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('access_token')) {
+        accessToken = urlParams.get('access_token');
+        // Store in localStorage for persistence
+        localStorage.setItem('spotify_access_token', accessToken);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+        // Try to get token from localStorage
+        accessToken = localStorage.getItem('spotify_access_token');
+    }
+
+    // Update UI based on login status
+    function updateLoginUI() {
+        const loginBtn = document.getElementById('loginBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const dashboardBtn = document.getElementById('dashboardBtn');
+        
+        if (accessToken) {
+            loginBtn.style.display = 'none';
+            analyzeBtn.style.display = 'block';
+            dashboardBtn.style.display = 'block';
+        } else {
+            loginBtn.style.display = 'block';
+            analyzeBtn.style.display = 'none';
+            dashboardBtn.style.display = 'none';
+        }
+    }
 
     document.getElementById('analyzeBtn')?.addEventListener('click', analyzePlaylist);
     document.getElementById('dashboardBtn')?.addEventListener('click', fetchUserInsights);
+    document.getElementById('loginBtn')?.addEventListener('click', () => {
+        window.location.href = `${BACKEND_URL}/login`;
+    });
+    
     document.getElementById('playlistUrl')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') analyzePlaylist();
     });
@@ -706,39 +731,41 @@
     async function analyzePlaylist() {
         clearError();
         clearResults();
+        
+        if (!accessToken) {
+            showError('Please login with Spotify first');
+            return;
+        }
+        
         const url = document.getElementById('playlistUrl')?.value.trim();
         if (!url) return showError('Please enter a playlist URL');
-        
-        try {
-            const authCheck = await fetch(`${BACKEND_URL}/check_auth`, { credentials: 'include' });
-            if (!authCheck.ok) throw new Error('Failed to check authentication');
-            const authData = await authCheck.json();
-            if (!authData.authenticated) {
-                window.location.href = `${BACKEND_URL}/login`;
-                return;
-            }
-        } catch (e) {
-            return showError('Authentication check failed');
-        }
         
         toggleLoading(true, 'analyzeBtn');
         
         try {
             const response = await fetch(`${BACKEND_URL}/analyze`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
                 body: JSON.stringify({ playlist_url: url })
             });
             
             if (!response.ok) {
                 const errorData = await response.json();
-                if (errorData.need_login) window.location.href = `${BACKEND_URL}/login`;
-                else throw new Error(errorData.error || 'Failed to analyze playlist');
+                if (errorData.need_login) {
+                    localStorage.removeItem('spotify_access_token');
+                    accessToken = null;
+                    updateLoginUI();
+                    showError('Session expired. Please login again.');
+                } else {
+                    throw new Error(errorData.error || 'Failed to analyze playlist');
+                }
+            } else {
+                const data = await response.json();
+                displayResults(data);
             }
-            
-            const data = await response.json();
-            displayResults(data);
         } catch (error) {
             showError(error.message || 'Unknown error');
         } finally {
@@ -750,29 +777,34 @@
         clearError();
         clearResults();
         
-        try {
-            const authCheck = await fetch(`${BACKEND_URL}/check_auth`, { credentials: 'include' });
-            if (!authCheck.ok) throw new Error('Failed to check authentication');
-            const authData = await authCheck.json();
-            if (!authData.authenticated) {
-                window.location.href = `${BACKEND_URL}/login`;
-                return;
-            }
-        } catch (e) {
-            return showError('Authentication check failed');
+        if (!accessToken) {
+            showError('Please login with Spotify first');
+            return;
         }
         
         toggleLoading(true, 'dashboardBtn');
         
         try {
-            const response = await fetch(`${BACKEND_URL}/user_dashboard`, { credentials: 'include' });
+            const response = await fetch(`${BACKEND_URL}/user_dashboard`, { 
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+            
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch user insights');
+                if (errorData.need_login) {
+                    localStorage.removeItem('spotify_access_token');
+                    accessToken = null;
+                    updateLoginUI();
+                    showError('Session expired. Please login again.');
+                } else {
+                    throw new Error(errorData.error || 'Failed to fetch user insights');
+                }
+            } else {
+                const data = await response.json();
+                displayUserInsights(data);
             }
-            
-            const data = await response.json();
-            displayUserInsights(data);
         } catch (error) {
             showError(error.message || 'Unknown error');
         } finally {
@@ -849,61 +881,61 @@
         
         const user = data.user_stats || {};
         const insights = data.personalized_insights || [];
-            insightsText.innerHTML = insights.length
-              ? insights.map(i => `<p>${i}</p>`).join('')
-              : '';
-            
-            let topArtistsHTML = '';
-            const topArtists = user.top_artists || [];
-            if (topArtists.length > 0) {
-                topArtistsHTML = topArtists.slice(0,5).map((artist, idx) => {
-                    const widthPercent = 100 - idx * 15;
-                    return `
-                    <div class="bar-item">
-                      <div class="bar-label">
-                        <span>${artist}</span>
-                        <span>#${idx + 1}</span>
-                      </div>
-                      <div class="bar-track"><div class="bar-fill" style="width: ${widthPercent}%;"></div></div>
-                    </div>`;
-                }).join('');
-            } else {
-                topArtistsHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Artists data</p>';
-            }
-            
-            let topTracksHTML = '';
-            const topTracks = user.top_tracks || [];
-            if (topTracks.length > 0) {
-                topTracksHTML = topTracks.map((t, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${t}</div>`).join('');
-            } else {
-                topTracksHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Tracks data</p>';
-            }
-            
-            let topGenresHTML = '';
-            const topGenres = user.top_genres || [];
-            if (topGenres.length > 0) {
-                topGenresHTML = topGenres.map((g, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${g}</div>`).join('');
-            } else {
-                topGenresHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Genres data</p>';
-            }
-            
-            summaryBoxes.innerHTML = `
-              <div class="summary-box">
-                <div class="summary-title">🎤 Top Artists</div>
-                <div class="bar-chart">${topArtistsHTML}</div>
-              </div>
-              <div class="summary-box">
-                <div class="summary-title">🎧 Top Tracks</div>
-                <div class="item-list">${topTracksHTML}</div>
-              </div>
-              <div class="summary-box">
-                <div class="summary-title"> Top Genres</div>
-                <div class="item-list">${topGenresHTML}</div>
-              </div>
-            `;
-            
-            container.style.display = 'block';
-            container.scrollIntoView({ behavior: 'smooth' });
+        insightsText.innerHTML = insights.length
+          ? insights.map(i => `<p>${i}</p>`).join('')
+          : '';
+        
+        let topArtistsHTML = '';
+        const topArtists = user.top_artists || [];
+        if (topArtists.length > 0) {
+            topArtistsHTML = topArtists.slice(0,5).map((artist, idx) => {
+                const widthPercent = 100 - idx * 15;
+                return `
+                <div class="bar-item">
+                  <div class="bar-label">
+                    <span>${artist}</span>
+                    <span>#${idx + 1}</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill" style="width: ${widthPercent}%;"></div></div>
+                </div>`;
+            }).join('');
+        } else {
+            topArtistsHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Artists data</p>';
+        }
+        
+        let topTracksHTML = '';
+        const topTracks = user.top_tracks || [];
+        if (topTracks.length > 0) {
+            topTracksHTML = topTracks.map((t, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${t}</div>`).join('');
+        } else {
+            topTracksHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Tracks data</p>';
+        }
+        
+        let topGenresHTML = '';
+        const topGenres = user.top_genres || [];
+        if (topGenres.length > 0) {
+            topGenresHTML = topGenres.map((g, idx) => `<div class="item-list-item"><span>${idx + 1}.</span> ${g}</div>`).join('');
+        } else {
+            topGenresHTML = '<p style="color:rgba(255,255,255,0.4);">No Top Genres data</p>';
+        }
+        
+        summaryBoxes.innerHTML = `
+          <div class="summary-box">
+            <div class="summary-title">🎤 Top Artists</div>
+            <div class="bar-chart">${topArtistsHTML}</div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-title">🎧 Top Tracks</div>
+            <div class="item-list">${topTracksHTML}</div>
+          </div>
+          <div class="summary-box">
+            <div class="summary-title">🎵 Top Genres</div>
+            <div class="item-list">${topGenresHTML}</div>
+          </div>
+        `;
+        
+        container.style.display = 'block';
+        container.scrollIntoView({ behavior: 'smooth' });
     }
     
     function toggleLoading(isLoading, buttonId) {
@@ -913,29 +945,8 @@
         if (button) button.disabled = isLoading;
     }
 
-    async function checkLoginStatus() {
-        try {
-            const response = await fetch(`${BACKEND_URL}/check_auth`, { credentials: 'include' });
-            const data = await response.json();
-            
-            if (!data.authenticated) {
-                document.getElementById('dashboardBtn').style.display = 'none';
-                document.getElementById('loginBtn').style.display = 'block';
-            } else {
-                document.getElementById('dashboardBtn').style.display = 'block';
-                document.getElementById('loginBtn').style.display = 'none';
-            }
-        } catch (e) {
-            console.error('Auth check failed:', e);
-        }
-    }
-
-    document.getElementById('loginBtn')?.addEventListener('click', () => {
-        window.location.href = `${BACKEND_URL}/login`;
-    });
-
-    // Check login status when page loads
-    checkLoginStatus();
+    // Initialize UI on page load
+    updateLoginUI();
 </script>
 </body>
 </html>
