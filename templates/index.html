@@ -651,22 +651,22 @@
     <div class="insights-text" id="insightsText"></div>
     <div class="summary-boxes" id="summaryBoxes"></div>
 </div>
-
 <script>
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
     
     // Store access token
-    let accessToken = null;
+    let accessToken = sessionStorage.getItem('spotify_access_token') || null;
 
     document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('access_token')) {
-        accessToken = urlParams.get('access_token');
-        localStorage.setItem('spotify_access_token', accessToken);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    updateLoginUI();
-});
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('access_token')) {
+            accessToken = urlParams.get('access_token');
+            sessionStorage.setItem('spotify_access_token', accessToken); // <-- Changed from localStorage
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        updateLoginUI();
+    });
+
     // Update UI based on login status
     function updateLoginUI() {
         const loginBtn = document.getElementById('loginBtn');
@@ -752,7 +752,7 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 if (errorData.need_login) {
-                    localStorage.removeItem('spotify_access_token');
+                    sessionStorage.removeItem('spotify_access_token'); // <-- Changed from localStorage
                     accessToken = null;
                     updateLoginUI();
                     showError('Session expired. Please login again.');
@@ -791,7 +791,7 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 if (errorData.need_login) {
-                    localStorage.removeItem('spotify_access_token');
+                    sessionStorage.removeItem('spotify_access_token'); // <-- Changed from localStorage
                     accessToken = null;
                     updateLoginUI();
                     showError('Session expired. Please login again.');
