@@ -658,19 +658,15 @@
     // Store access token
     let accessToken = null;
 
-    // Check if we have a token in URL params (from OAuth callback)
+    document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('access_token')) {
         accessToken = urlParams.get('access_token');
-        // Store in localStorage for persistence
         localStorage.setItem('spotify_access_token', accessToken);
-        // Clean up URL
         window.history.replaceState({}, document.title, window.location.pathname);
-    } else {
-        // Try to get token from localStorage
-        accessToken = localStorage.getItem('spotify_access_token');
     }
-
+    updateLoginUI();
+});
     // Update UI based on login status
     function updateLoginUI() {
         const loginBtn = document.getElementById('loginBtn');
