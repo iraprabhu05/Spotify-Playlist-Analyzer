@@ -1,32 +1,25 @@
-from flask import Flask, redirect, request, session, url_for, jsonify
+from flask import Flask, redirect, request, jsonify
 from flask_cors import CORS
 import requests
 import urllib.parse
 import secrets
 import os
 
-
-
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 
-
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-app.config['SESSION_COOKIE_SECURE'] = True
-
-
-# Enable CORS for your Vercel domain
+# Enable CORS
 CORS(app, supports_credentials=True, origins=[
     'https://spotify-playlist-analyzer-ira.vercel.app',
-    'http://localhost:3000',  # for local development
-    'http://localhost:5173'   # for Vite local dev
+    'http://localhost:3000',
+    'http://localhost:5173'
 ])
 
-# Spotify API credentials - USE ENVIRONMENT VARIABLES
+# Spotify API credentials
 CLIENT_ID = os.environ.get('CLIENT_ID', 'f35352ea09ec4a3db35281095f8e5f3d')
 CLIENT_SECRET = os.environ.get('CLIENT_SECRET', '99523569658b41c596afbd5b3b657974')
 
-# Use environment variable for redirect URI
+# URLs
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://spotify-playlist-analyzer-ira.vercel.app')
 BACKEND_URL = os.environ.get('BACKEND_URL', 'https://spotify-playlist-analyzer-production.up.railway.app')
 REDIRECT_URI = f'{BACKEND_URL}/callback'
@@ -43,7 +36,7 @@ SCOPE = 'user-read-private user-read-email playlist-read-private user-top-read'
 def index():
     return jsonify({
         'status': 'Backend is running!',
-        'endpoints': ['/login', '/callback', '/check_auth', '/analyze', '/user_dashboard', '/logout']
+        'endpoints': ['/login', '/callback', '/analyze', '/user_dashboard']
     })
 
 @app.route('/login')
@@ -80,26 +73,26 @@ def callback():
             if 'access_token' not in token_info:
                 return redirect(f"{FRONTEND_URL}?error=token_failed")
             
-            session['access_token'] = token_info['access_token']
-            session['refresh_token'] = token_info.get('refresh_token')
+            # Instead of storing in session, pass token to frontend via URL
+            access_token = token_info['access_token']
+            return redirect(f"{FRONTEND_URL}?access_token={access_token}")
             
-            headers = {'Authorization': f"Bearer {session['access_token']}"}
-            user_response = requests.get(f'{SPOTIFY_API_BASE_URL}/me', headers=headers)
-            session['user_info'] = user_response.json()
-            
-            return redirect(f"{FRONTEND_URL}?authenticated=true")
         except Exception as e:
             return redirect(f"{FRONTEND_URL}?error=callback_failed")
     
     return redirect(FRONTEND_URL)
 
-@app.route('/check_auth')
-def check_auth():
-    return jsonify({'authenticated': 'access_token' in session})
+def get_token_from_request():
+    """Extract token from Authorization header"""
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        return auth_header.replace('Bearer ', '')
+    return None
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    if 'access_token' not in session:
+    token = get_token_from_request()
+    if not token:
         return jsonify({'error': 'Not authenticated', 'need_login': True}), 401
     
     data = request.get_json()
@@ -110,7 +103,7 @@ def analyze():
     except:
         return jsonify({'error': 'Invalid playlist URL'}), 400
     
-    headers = {'Authorization': f"Bearer {session['access_token']}"}
+    headers = {'Authorization': f"Bearer {token}"}
     
     try:
         playlist_response = requests.get(f'{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}', headers=headers)
@@ -159,10 +152,11 @@ def analyze():
 
 @app.route('/user_dashboard')
 def user_dashboard():
-    if 'access_token' not in session:
+    token = get_token_from_request()
+    if not token:
         return jsonify({'error': 'Not authenticated', 'need_login': True}), 401
 
-    headers = {'Authorization': f"Bearer {session['access_token']}"}
+    headers = {'Authorization': f"Bearer {token}"}
     user_stats = {
         'top_artists': [],
         'top_tracks': [],
@@ -201,26 +195,13 @@ def user_dashboard():
                 top_track = tracks[0]
                 personalized_insights.append(f"Your current favorite track is '{top_track['name']}' by {top_track['artists'][0]['name']}.")
     except Exception as e:
-        pass  # Continue with whatever data we have
+        pass
 
     return jsonify({
         'user_stats': user_stats,
         'personalized_insights': personalized_insights
     })
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return jsonify({'success': True, 'message': 'Logged out successfully'})
-
-
 if __name__ == '__main__':
-    # Get port from environment variable (Railway sets this)
     port = int(os.environ.get('PORT', 5000))
-    # Bind to 0.0.0.0 so Railway can access it
     app.run(host='0.0.0.0', port=port, debug=False)
-
-
-
-
-
