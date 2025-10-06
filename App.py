@@ -10,6 +10,13 @@ import os
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(16))
 
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+
+Session(app)
+
 # Enable CORS for your Vercel domain
 CORS(app, supports_credentials=True, origins=[
     'https://spotify-playlist-analyzer-ira.vercel.app',
@@ -214,6 +221,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     # Bind to 0.0.0.0 so Railway can access it
     app.run(host='0.0.0.0', port=port, debug=False)
+
 
 
 
