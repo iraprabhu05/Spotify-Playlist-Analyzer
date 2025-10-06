@@ -2,9 +2,9 @@
 # 🎧 Spotify Playlist Analyzer 
 
 A sleek web app that lets you **analyze your Spotify playlists** and uncover insights about your **music taste**, **top artists**, and **listening patterns**  all wrapped in a stunning UI.
+---
 Link: spotify-playlist-analyzer-ira.vercel.app/
 ---
-
 ## Features:
 
 ✅ **Playlist Analysis**  
