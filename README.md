@@ -30,6 +30,7 @@ After logging in with Spotify, view personalized insights such as:
 ---
 <img width="1920" height="853" alt="Playlist Analyzer _ Basic Information - Google Chrome 06_10_2025 11_46_14" src="https://github.com/user-attachments/assets/ff2395f7-833b-440d-947d-a1eea853db45" />
 
+
 <img width="1920" height="862" alt="Spotify Playlist Analyzer - Google Chrome 05_10_2025 19_36_41" src="https://github.com/user-attachments/assets/11f85bf3-572e-44bc-9226-d6b59690a155" />
 
 ---
