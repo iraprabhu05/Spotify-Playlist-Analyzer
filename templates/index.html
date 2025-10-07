@@ -284,6 +284,15 @@
         @keyframes shimmer {
             to { background-position: 200% 0; }
         }
+        .playlist-cover {
+            width: 200px;
+            height: 200px;
+            border-radius: 16px;
+            margin: 0 auto 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(29, 185, 84, 0.3), rgba(83, 91, 210, 0.3));
+        }
         .playlist-header h2 {
             font-size: 2.8rem;
             font-weight: 800;
@@ -400,6 +409,75 @@
             font-weight: 800;
             font-size: 1rem;
             white-space: nowrap;
+        }
+        .tracks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .track-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .track-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-8px);
+            border-color: rgba(29, 185, 84, 0.3);
+            box-shadow: 0 15px 40px rgba(29, 185, 84, 0.2);
+        }
+        .track-card-image {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(29, 185, 84, 0.2), rgba(83, 91, 210, 0.2));
+        }
+        .track-card-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.3;
+        }
+        .track-card-artist {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .track-card-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .track-card-popularity {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #1DB954;
+            font-weight: 700;
+        }
+        .track-card-duration {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
         }
         #userInsightsContainer {
             display: none;
@@ -615,7 +693,6 @@
         </div>
         <button class="analyze-btn" id="analyzeBtn">Analyze Playlist</button>
         <button class="analyze-btn dashboard-btn" id="dashboardBtn">View My Listening Insights</button>
-        <button class="analyze-btn" id="loginBtn" style="display:none; background: linear-gradient(135deg, #1ed760, #1DB954);">🔐 Login with Spotify</button>
     </div>
 
     <div class="error" id="error"></div>
@@ -632,6 +709,12 @@
     <div class="results" id="results" style="margin-bottom: 40px;">
         <div class="playlist-header" id="playlistInfo"></div>
         <div class="stats-grid" id="statsGrid"></div>
+        
+        <div class="section-card">
+            <h3 class="section-title">🎵 All Tracks</h3>
+            <div id="allTracks" class="tracks-grid"></div>
+        </div>
+        
         <div class="section-card">
             <h3 class="section-title">🏆 Most Popular Track</h3>
             <div id="topTrack"></div>
@@ -655,39 +738,25 @@
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
     
     // Store access token
-    let accessToken = sessionStorage.getItem('spotify_access_token') || null;
+    let accessToken = null;
+    let fullPlaylistData = null; // Store complete playlist data
 
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('access_token')) {
             accessToken = urlParams.get('access_token');
-            sessionStorage.setItem('spotify_access_token', accessToken); // <-- Changed from localStorage
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-        updateLoginUI();
     });
 
-    // Update UI based on login status
-    function updateLoginUI() {
-        const loginBtn = document.getElementById('loginBtn');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const dashboardBtn = document.getElementById('dashboardBtn');
-        
-        if (accessToken) {
-            loginBtn.style.display = 'none';
-            analyzeBtn.style.display = 'block';
-            dashboardBtn.style.display = 'block';
-        } else {
-            loginBtn.style.display = 'block';
-            analyzeBtn.style.display = 'none';
-            dashboardBtn.style.display = 'none';
-        }
-    }
-
     document.getElementById('analyzeBtn')?.addEventListener('click', analyzePlaylist);
-    document.getElementById('dashboardBtn')?.addEventListener('click', fetchUserInsights);
-    document.getElementById('loginBtn')?.addEventListener('click', () => {
-        window.location.href = `${BACKEND_URL}/login`;
+    document.getElementById('dashboardBtn')?.addEventListener('click', () => {
+        if (!accessToken) {
+            // Redirect to login
+            window.location.href = `${BACKEND_URL}/login`;
+        } else {
+            fetchUserInsights();
+        }
     });
     
     document.getElementById('playlistUrl')?.addEventListener('keypress', (e) => {
@@ -717,6 +786,7 @@
         document.getElementById('statsGrid').innerHTML = '';
         document.getElementById('topTrack').innerHTML = '';
         document.getElementById('topArtist').innerHTML = '';
+        document.getElementById('allTracks').innerHTML = '';
         const insightsContainer = document.getElementById('userInsightsContainer');
         if (insightsContainer) {
             insightsContainer.style.display = 'none';
@@ -729,11 +799,6 @@
         clearError();
         clearResults();
         
-        if (!accessToken) {
-            showError('Please login with Spotify first');
-            return;
-        }
-        
         const url = document.getElementById('playlistUrl')?.value.trim();
         if (!url) return showError('Please enter a playlist URL');
         
@@ -744,25 +809,19 @@
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
+                    ...(accessToken && {'Authorization': `Bearer ${accessToken}`})
                 },
                 body: JSON.stringify({ playlist_url: url })
             });
             
             if (!response.ok) {
                 const errorData = await response.json();
-                if (errorData.need_login) {
-                    sessionStorage.removeItem('spotify_access_token'); // <-- Changed from localStorage
-                    accessToken = null;
-                    updateLoginUI();
-                    showError('Session expired. Please login again.');
-                } else {
-                    throw new Error(errorData.error || 'Failed to analyze playlist');
-                }
-            } else {
-                const data = await response.json();
-                displayResults(data);
+                throw new Error(errorData.error || 'Failed to analyze playlist');
             }
+            
+            const data = await response.json();
+            fullPlaylistData = data; // Store complete data
+            displayResults(data);
         } catch (error) {
             showError(error.message || 'Unknown error');
         } finally {
@@ -791,9 +850,7 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 if (errorData.need_login) {
-                    sessionStorage.removeItem('spotify_access_token'); // <-- Changed from localStorage
                     accessToken = null;
-                    updateLoginUI();
                     showError('Session expired. Please login again.');
                 } else {
                     throw new Error(errorData.error || 'Failed to fetch user insights');
@@ -815,15 +872,20 @@
         const statsGrid = document.getElementById('statsGrid');
         const topTrack = document.getElementById('topTrack');
         const topArtist = document.getElementById('topArtist');
+        const allTracks = document.getElementById('allTracks');
         const results = document.getElementById('results');
         
+        // Playlist Header with Cover
         if (playlistInfo) {
+            const coverImage = data.playlist_image || '';
             playlistInfo.innerHTML = `
-                <h2>${data.playlist_name || ''}</h2>
-                <p>Created by ${data.playlist_owner || ''}</p>
+                ${coverImage ? `<img src="${coverImage}" alt="Playlist Cover" class="playlist-cover" />` : ''}
+                <h2>${data.playlist_name || 'Unknown Playlist'}</h2>
+                <p>Created by ${data.playlist_owner || 'Unknown'}</p>
             `;
         }
         
+        // Stats Grid
         const stats = data.stats || {};
         if (statsGrid) {
             statsGrid.innerHTML = `
@@ -833,25 +895,48 @@
             `;
         }
         
+        // All Tracks Grid
+        if (allTracks && data.tracks && data.tracks.length > 0) {
+            allTracks.innerHTML = data.tracks.map(track => {
+                const durationMin = Math.floor(track.duration_ms / 60000);
+                const durationSec = Math.floor((track.duration_ms % 60000) / 1000);
+                const duration = `${durationMin}:${durationSec.toString().padStart(2, '0')}`;
+                
+                return `
+                    <div class="track-card">
+                        <img src="${track.album_image || ''}" alt="${track.name}" class="track-card-image" onerror="this.style.display='none'" />
+                        <div class="track-card-name">${track.name || 'Unknown'}</div>
+                        <div class="track-card-artist">${track.artists || 'Unknown Artist'}</div>
+                        <div class="track-card-stats">
+                            <div class="track-card-popularity">⭐ ${track.popularity || 0}</div>
+                            <div class="track-card-duration">${duration}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Top Track
         if (topTrack) {
             topTrack.innerHTML = `
                 <div class="track-item">
                     <div class="track-icon">🎧</div>
                     <div class="track-info">
-                        <div class="track-name">${stats.most_popular_track || ''}</div>
-                        <div class="track-artist">${stats.most_popular_artist || ''}</div>
+                        <div class="track-name">${stats.most_popular_track || 'N/A'}</div>
+                        <div class="track-artist">${stats.most_popular_artist || 'N/A'}</div>
                     </div>
                     <div class="track-badge">TOP</div>
                 </div>
             `;
         }
         
+        // Top Artist
         if (topArtist) {
             topArtist.innerHTML = `
                 <div class="track-item">
                     <div class="track-icon">🎤</div>
                     <div class="track-info">
-                        <div class="track-name">${stats.most_common_artist || ''}</div>
+                        <div class="track-name">${stats.most_common_artist || 'N/A'}</div>
                         <div class="track-artist">${stats.artist_count || 0} tracks</div>
                     </div>
                     <div class="track-badge">#1</div>
@@ -860,7 +945,7 @@
         }
         
         results?.classList.add('active');
-        results?.scrollIntoView({ behavior: 'smooth' });
+        results?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     
     function displayUserInsights(data) {
@@ -941,9 +1026,6 @@
         if (loadingEl) loadingEl.classList.toggle('active', isLoading);
         if (button) button.disabled = isLoading;
     }
-
-    // Initialize UI on page load
-    updateLoginUI();
 </script>
 </body>
 </html>
