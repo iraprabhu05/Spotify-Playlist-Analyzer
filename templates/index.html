@@ -47,7 +47,10 @@
             padding: 20px 15px;
         }
         .wide-container {
-            max-width: 1400px;
+            max-width: 1600px;
+        }
+        .extra-wide-container {
+            max-width: 95%;
         }
         .header {
             text-align: center;
@@ -597,6 +600,13 @@
             color: rgba(255, 255, 255, 0.9);
             flex: 1;
         }
+        .insight-track-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(29, 185, 84, 0.2), rgba(83, 91, 210, 0.2));
+        }
         .insights-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -700,7 +710,7 @@
         <p class="loading-subtext">This might take a moment...</p>
     </div>
 
-    <div class="results wide-container" id="results" style="margin-bottom: 40px;">
+    <div class="results extra-wide-container" id="results" style="margin-bottom: 40px;">
         <div class="playlist-header" id="playlistInfo"></div>
         <div class="stats-grid" id="statsGrid"></div>
         
@@ -988,7 +998,7 @@
             `;
         }
         
-        // Top Tracks Card
+        // Top Tracks Card (with album images)
         const topTracks = user.top_tracks || [];
         if (topTracks.length > 0) {
             insightCardsHTML += `
@@ -1000,7 +1010,8 @@
                     ${topTracks.slice(0, 5).map((track, idx) => `
                         <div class="insight-list-item">
                             <div class="insight-item-rank">${idx + 1}</div>
-                            <div class="insight-item-text">${track}</div>
+                            ${track.image ? `<img src="${track.image}" alt="${track.name}" class="insight-track-img" />` : ''}
+                            <div class="insight-item-text">${track.name || track}</div>
                         </div>
                     `).join('')}
                 </div>
