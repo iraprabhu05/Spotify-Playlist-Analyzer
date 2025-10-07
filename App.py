@@ -73,7 +73,6 @@ def callback():
             if 'access_token' not in token_info:
                 return redirect(f"{FRONTEND_URL}?error=token_failed")
             
-            # Instead of storing in session, pass token to frontend via URL
             access_token = token_info['access_token']
             return redirect(f"{FRONTEND_URL}?access_token={access_token}")
             
@@ -89,11 +88,30 @@ def get_token_from_request():
         return auth_header.replace('Bearer ', '')
     return None
 
+def get_client_credentials_token():
+    """Get access token using client credentials flow for public playlists"""
+    try:
+        auth_response = requests.post(SPOTIFY_TOKEN_URL, data={
+            'grant_type': 'client_credentials',
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET
+        })
+        if auth_response.status_code == 200:
+            return auth_response.json().get('access_token')
+    except:
+        pass
+    return None
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     token = get_token_from_request()
     
-    # Allow requests without token (public playlist access)
+    # If no user token, try to get client credentials token for public playlists
+    if not token:
+        token = get_client_credentials_token()
+        if not token:
+            return jsonify({'error': 'Unable to authenticate with Spotify'}), 401
+    
     data = request.get_json()
     playlist_url = data.get('playlist_url', '')
     
@@ -102,59 +120,61 @@ def analyze():
     except:
         return jsonify({'error': 'Invalid playlist URL'}), 400
     
-    headers = {}
-    if token:
-        headers = {'Authorization': f"Bearer {token}"}
-    else:
-        # Use client credentials for public playlists
-        try:
-            auth_response = requests.post(SPOTIFY_TOKEN_URL, data={
-                'grant_type': 'client_credentials',
-                'client_id': CLIENT_ID,
-                'client_secret': CLIENT_SECRET
-            })
-            if auth_response.status_code == 200:
-                access_token = auth_response.json().get('access_token')
-                headers = {'Authorization': f"Bearer {access_token}"}
-        except:
-            return jsonify({'error': 'Failed to authenticate'}), 401
+    headers = {'Authorization': f"Bearer {token}"}
     
     try:
+        # Fetch playlist details
         playlist_response = requests.get(f'{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}', headers=headers)
         if playlist_response.status_code != 200:
-            return jsonify({'error': 'Failed to fetch playlist'}), 400
+            error_msg = 'Playlist not found or is private'
+            if playlist_response.status_code == 404:
+                error_msg = 'Playlist not found. Please check the URL.'
+            elif playlist_response.status_code == 403:
+                error_msg = 'This playlist is private. Please make it public or login to access it.'
+            return jsonify({'error': error_msg}), 400
         
         playlist = playlist_response.json()
-        tracks_response = requests.get(playlist['tracks']['href'], headers=headers)
-        tracks_data = tracks_response.json().get('items', [])
+        
+        # Fetch all tracks (handle pagination)
+        all_tracks_data = []
+        tracks_url = playlist['tracks']['href']
+        
+        while tracks_url:
+            tracks_response = requests.get(tracks_url, headers=headers)
+            if tracks_response.status_code != 200:
+                break
+            tracks_page = tracks_response.json()
+            all_tracks_data.extend(tracks_page.get('items', []))
+            tracks_url = tracks_page.get('next')  # Get next page URL
         
         # Extract all track details with album images
         all_tracks = []
-        for item in tracks_data:
-            if item['track']:
+        for item in all_tracks_data:
+            if item and item.get('track'):
                 track = item['track']
                 all_tracks.append({
-                    'name': track['name'],
+                    'name': track.get('name', 'Unknown'),
                     'artists': ', '.join([a['name'] for a in track.get('artists', [])]),
                     'album_image': track['album']['images'][0]['url'] if track.get('album') and track['album'].get('images') else None,
+                    'album_name': track['album'].get('name', 'Unknown') if track.get('album') else 'Unknown',
                     'duration_ms': track.get('duration_ms', 0),
                     'popularity': track.get('popularity', 0)
                 })
         
-        total_tracks = len(tracks_data)
-        total_duration_ms = sum(item['track']['duration_ms'] for item in tracks_data if item['track'])
+        total_tracks = len(all_tracks_data)
+        total_duration_ms = sum(item['track']['duration_ms'] for item in all_tracks_data if item and item.get('track'))
         total_duration_hours = round(total_duration_ms / (1000 * 60 * 60), 2)
         
-        popularities = [item['track']['popularity'] for item in tracks_data if item['track']]
+        popularities = [item['track']['popularity'] for item in all_tracks_data if item and item.get('track')]
         avg_popularity = round(sum(popularities) / len(popularities)) if popularities else 0
         
-        most_popular = max(tracks_data, key=lambda x: x['track']['popularity'] if x['track'] else 0)
-        most_popular_track = most_popular['track']['name'] if most_popular['track'] else 'N/A'
-        most_popular_artist = most_popular['track']['artists'][0]['name'] if most_popular['track'] and most_popular['track']['artists'] else 'N/A'
+        most_popular = max(all_tracks_data, key=lambda x: x['track']['popularity'] if x and x.get('track') else 0)
+        most_popular_track = most_popular['track']['name'] if most_popular and most_popular.get('track') else 'N/A'
+        most_popular_artist = most_popular['track']['artists'][0]['name'] if most_popular and most_popular.get('track') and most_popular['track'].get('artists') else 'N/A'
         
         artist_counts = {}
-        for item in tracks_data:
-            if item['track'] and item['track']['artists']:
+        for item in all_tracks_data:
+            if item and item.get('track') and item['track'].get('artists'):
                 artist_name = item['track']['artists'][0]['name']
                 artist_counts[artist_name] = artist_counts.get(artist_name, 0) + 1
         
@@ -165,8 +185,8 @@ def analyze():
         playlist_image = playlist['images'][0]['url'] if playlist.get('images') else None
         
         return jsonify({
-            'playlist_name': playlist['name'],
-            'playlist_owner': playlist['owner']['display_name'],
+            'playlist_name': playlist.get('name', 'Unknown Playlist'),
+            'playlist_owner': playlist['owner'].get('display_name', 'Unknown'),
             'playlist_image': playlist_image,
             'tracks': all_tracks,
             'stats': {
@@ -180,7 +200,7 @@ def analyze():
             }
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f'Failed to analyze playlist: {str(e)}'}), 500
 
 @app.route('/user_dashboard')
 def user_dashboard():
@@ -221,11 +241,11 @@ def user_dashboard():
         if response_tracks.status_code == 200:
             tracks = response_tracks.json().get('items', [])
             for t in tracks:
-                artist_name = t['artists'][0]['name'] if t['artists'] else 'Unknown'
-                user_stats['top_tracks'].append(f"{t['name']} - {artist_name}")
+                artist_name = t['artists'][0]['name'] if t.get('artists') else 'Unknown'
+                user_stats['top_tracks'].append(f"{t.get('name', 'Unknown')} - {artist_name}")
             if tracks:
                 top_track = tracks[0]
-                personalized_insights.append(f"Your current favorite track is '{top_track['name']}' by {top_track['artists'][0]['name']}.")
+                personalized_insights.append(f"Your current favorite track is '{top_track.get('name', 'Unknown')}' by {top_track['artists'][0]['name'] if top_track.get('artists') else 'Unknown'}.")
     except Exception as e:
         pass
 
