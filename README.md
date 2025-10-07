@@ -46,5 +46,5 @@ Backend: Python with Flask
 API: Spotify Web API for retrieving user and playlist data
 
 ## NOTE: 
--View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
--Analze playlist works for public playlists if it is private you need to login.
+- View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
+- Analze playlist works for public playlists if it is private you need to login.
