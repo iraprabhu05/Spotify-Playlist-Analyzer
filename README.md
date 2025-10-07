@@ -1,4 +1,5 @@
 
+
 # **🎧 Spotify Playlist Analyzer**
 
 A sleek web app that lets you analyze your Spotify playlists and uncover insights about your music taste, top artists, and listening patterns — all wrapped in a stunning UI.
@@ -44,4 +45,6 @@ Backend: Python with Flask
 
 API: Spotify Web API for retrieving user and playlist data
 
-## NOTE: View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
+## NOTE: 
+-View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
+-Analze playlist works for public playlists if it is private you need to login.
