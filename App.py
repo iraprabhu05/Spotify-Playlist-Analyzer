@@ -92,9 +92,8 @@ def get_token_from_request():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     token = get_token_from_request()
-    if not token:
-        return jsonify({'error': 'Not authenticated', 'need_login': True}), 401
     
+    # Allow requests without token (public playlist access)
     data = request.get_json()
     playlist_url = data.get('playlist_url', '')
     
@@ -103,7 +102,22 @@ def analyze():
     except:
         return jsonify({'error': 'Invalid playlist URL'}), 400
     
-    headers = {'Authorization': f"Bearer {token}"}
+    headers = {}
+    if token:
+        headers = {'Authorization': f"Bearer {token}"}
+    else:
+        # Use client credentials for public playlists
+        try:
+            auth_response = requests.post(SPOTIFY_TOKEN_URL, data={
+                'grant_type': 'client_credentials',
+                'client_id': CLIENT_ID,
+                'client_secret': CLIENT_SECRET
+            })
+            if auth_response.status_code == 200:
+                access_token = auth_response.json().get('access_token')
+                headers = {'Authorization': f"Bearer {access_token}"}
+        except:
+            return jsonify({'error': 'Failed to authenticate'}), 401
     
     try:
         playlist_response = requests.get(f'{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}', headers=headers)
@@ -113,6 +127,19 @@ def analyze():
         playlist = playlist_response.json()
         tracks_response = requests.get(playlist['tracks']['href'], headers=headers)
         tracks_data = tracks_response.json().get('items', [])
+        
+        # Extract all track details with album images
+        all_tracks = []
+        for item in tracks_data:
+            if item['track']:
+                track = item['track']
+                all_tracks.append({
+                    'name': track['name'],
+                    'artists': ', '.join([a['name'] for a in track.get('artists', [])]),
+                    'album_image': track['album']['images'][0]['url'] if track.get('album') and track['album'].get('images') else None,
+                    'duration_ms': track.get('duration_ms', 0),
+                    'popularity': track.get('popularity', 0)
+                })
         
         total_tracks = len(tracks_data)
         total_duration_ms = sum(item['track']['duration_ms'] for item in tracks_data if item['track'])
@@ -134,9 +161,14 @@ def analyze():
         most_common_artist = max(artist_counts, key=artist_counts.get) if artist_counts else 'N/A'
         artist_count = artist_counts.get(most_common_artist, 0)
         
+        # Get playlist cover image
+        playlist_image = playlist['images'][0]['url'] if playlist.get('images') else None
+        
         return jsonify({
             'playlist_name': playlist['name'],
             'playlist_owner': playlist['owner']['display_name'],
+            'playlist_image': playlist_image,
+            'tracks': all_tracks,
             'stats': {
                 'total_tracks': total_tracks,
                 'avg_popularity': avg_popularity,
