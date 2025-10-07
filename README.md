@@ -44,4 +44,4 @@ Backend: Python with Flask
 
 API: Spotify Web API for retrieving user and playlist data
 
-## NOTE: Website Works only for allowed users as it is in deployment mode.
+## NOTE: View My Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
