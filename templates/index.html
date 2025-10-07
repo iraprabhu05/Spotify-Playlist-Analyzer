@@ -283,10 +283,16 @@
         .playlist-header::before {
             content: '';
             position: absolute;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
             top: 0; left: 0; width: 100%; height: 4px;
             background: linear-gradient(90deg, #1DB954, #1ed760, #1DB954);
             background-size: 200% 100%;
             animation: shimmer 3s linear infinite;
+            
+
         }
         @keyframes shimmer {
             to { background-position: 200% 0; }
@@ -302,6 +308,7 @@
         }
         .playlist-info {
             flex: 1;
+            text-align: center;
         }
         .playlist-type {
             color: rgba(255, 255, 255, 0.7);
