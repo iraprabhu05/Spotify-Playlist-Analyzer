@@ -718,6 +718,40 @@
         .scroll-top-btn:active {
                 transform: translateY(-2px);
    }
+
+        .sort-container {
+    display: flex;
+    align-items: center;
+}
+
+.sort-select {
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 0.95rem;
+    padding: 10px 16px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+
+.sort-select:hover {
+    border-color: #1DB954;
+}
+
+.sort-select:focus {
+    border-color: #1DB954;
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.1);
+}
+
+.sort-select option {
+    background: #1a1a1a;
+    color: #fff;
+}
     </style>
 </head>
 <body>
@@ -759,10 +793,25 @@
     <div class="playlist-header" id="playlistInfo"></div>
     <div class="stats-grid" id="statsGrid"></div>
     
-    <div class="section-card">
-        <h3 class="section-title">🎵 All Tracks</h3>
-        <div id="allTracks" class="track-list"></div>
+   <div class="section-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 class="section-title" style="margin-bottom: 0;">🎵 All Tracks</h3>
+        <div class="sort-container">
+            <label for="sortSelect" style="color: rgba(255, 255, 255, 0.7); margin-right: 10px; font-size: 0.9rem;">Sort by:</label>
+            <select id="sortSelect" class="sort-select">
+                <option value="default">Default Order</option>
+                <option value="popularity-high">Popularity (High to Low)</option>
+                <option value="popularity-low">Popularity (Low to High)</option>
+                <option value="duration-long">Duration (Longest First)</option>
+                <option value="duration-short">Duration (Shortest First)</option>
+                <option value="name-az">Track Name (A-Z)</option>
+                <option value="name-za">Track Name (Z-A)</option>
+                <option value="artist-az">Artist Name (A-Z)</option>
+                <option value="artist-za">Artist Name (Z-A)</option>
+            </select>
+        </div>
     </div>
+    <div id="allTracks" class="track-list"></div>
 </div>
 
 <div class="container wide-container" id="userInsightsContainer">
@@ -778,11 +827,12 @@
     <div class="insights-summary" id="insightsSummary"></div>
 </div>
 <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top">↑</button>
-    <script>
+  <script>
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
     
     let accessToken = null;
     let fullPlaylistData = null;
+    let originalTracks = []; // Store original order
 
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -790,23 +840,24 @@
             accessToken = urlParams.get('access_token');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
-         // Scroll to top functionality 
-    const scrollTopBtn = document.getElementById('scrollTopBtn');
-    
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 300) {
-            scrollTopBtn?.classList.add('visible');
-        } else {
-            scrollTopBtn?.classList.remove('visible');
-        }
-    });
-    
-    scrollTopBtn?.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
+        
+        // Scroll to top functionality 
+        const scrollTopBtn = document.getElementById('scrollTopBtn');
+        
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollTopBtn?.classList.add('visible');
+            } else {
+                scrollTopBtn?.classList.remove('visible');
+            }
         });
-    });
+        
+        scrollTopBtn?.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
     });
 
     document.getElementById('analyzeBtn')?.addEventListener('click', analyzePlaylist);
@@ -820,6 +871,10 @@
     
     document.getElementById('playlistUrl')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') analyzePlaylist();
+    });
+
+    document.getElementById('sortSelect')?.addEventListener('change', (e) => {
+        sortTracks(e.target.value);
     });
 
     function clearError() {
@@ -928,6 +983,82 @@
         }
     }
     
+    function sortTracks(sortType) {
+        if (!fullPlaylistData || !fullPlaylistData.tracks) return;
+        
+        let tracks = [...fullPlaylistData.tracks]; // Create a copy
+        
+        switch(sortType) {
+            case 'default':
+                tracks = [...originalTracks];
+                break;
+            case 'popularity-high':
+                tracks.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+                break;
+            case 'popularity-low':
+                tracks.sort((a, b) => (a.popularity || 0) - (b.popularity || 0));
+                break;
+            case 'duration-long':
+                tracks.sort((a, b) => (b.duration_ms || 0) - (a.duration_ms || 0));
+                break;
+            case 'duration-short':
+                tracks.sort((a, b) => (a.duration_ms || 0) - (b.duration_ms || 0));
+                break;
+            case 'name-az':
+                tracks.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                break;
+            case 'name-za':
+                tracks.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+                break;
+            case 'artist-az':
+                tracks.sort((a, b) => (a.artists || '').localeCompare(b.artists || ''));
+                break;
+            case 'artist-za':
+                tracks.sort((a, b) => (b.artists || '').localeCompare(a.artists || ''));
+                break;
+        }
+        
+        displayTrackList(tracks);
+    }
+    
+    function displayTrackList(tracks) {
+        const allTracks = document.getElementById('allTracks');
+        if (!allTracks) return;
+        
+        let trackListHTML = `
+            <div class="track-list-header">
+                <div>#</div>
+                <div></div>
+                <div>Title</div>
+                <div class="track-album-name">Album</div>
+                <div>Popularity</div>
+                <div>Duration</div>
+            </div>
+        `;
+        
+        trackListHTML += tracks.map((track, index) => {
+            const durationMin = Math.floor(track.duration_ms / 60000);
+            const durationSec = Math.floor((track.duration_ms % 60000) / 1000);
+            const duration = `${durationMin}:${durationSec.toString().padStart(2, '0')}`;
+            
+            return `
+                <div class="track-list-item">
+                    <div class="track-number">${index + 1}</div>
+                    <img src="${track.album_image || ''}" alt="${track.name}" class="track-album-img" onerror="this.style.display='none'" />
+                    <div class="track-title-artist">
+                        <div class="track-title">${track.name || 'Unknown'}</div>
+                        <div class="track-artist-name">${track.artists || 'Unknown Artist'}</div>
+                    </div>
+                    <div class="track-album-name">${track.album || 'Unknown'}</div>
+                    <div class="track-popularity">⭐ ${track.popularity || 0}</div>
+                    <div class="track-duration">${duration}</div>
+                </div>
+            `;
+        }).join('');
+        
+        allTracks.innerHTML = trackListHTML;
+    }
+    
     function displayResults(data) {
         clearError();
         const playlistInfo = document.getElementById('playlistInfo');
@@ -975,40 +1106,10 @@
             `;
         }
         
-        // Track List
+        // Track List - Store original and display
         if (allTracks && data.tracks && data.tracks.length > 0) {
-            let trackListHTML = `
-                <div class="track-list-header">
-                    <div>#</div>
-                    <div></div>
-                    <div>Title</div>
-                    <div class="track-album-name">Album</div>
-                    <div>Popularity</div>
-                    <div>Duration</div>
-                </div>
-            `;
-            
-            trackListHTML += data.tracks.map((track, index) => {
-                const durationMin = Math.floor(track.duration_ms / 60000);
-                const durationSec = Math.floor((track.duration_ms % 60000) / 1000);
-                const duration = `${durationMin}:${durationSec.toString().padStart(2, '0')}`;
-                
-                return `
-                    <div class="track-list-item">
-                        <div class="track-number">${index + 1}</div>
-                        <img src="${track.album_image || ''}" alt="${track.name}" class="track-album-img" onerror="this.style.display='none'" />
-                        <div class="track-title-artist">
-                            <div class="track-title">${track.name || 'Unknown'}</div>
-                            <div class="track-artist-name">${track.artists || 'Unknown Artist'}</div>
-                        </div>
-                        <div class="track-album-name">${track.name || 'Unknown'}</div>
-                        <div class="track-popularity">⭐ ${track.popularity || 0}</div>
-                        <div class="track-duration">${duration}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            allTracks.innerHTML = trackListHTML;
+            originalTracks = [...data.tracks]; // Store original order
+            displayTrackList(data.tracks);
         }
         
         results?.classList.add('active');
