@@ -735,7 +735,6 @@
         <h1>Playlist Analyzer</h1>
         <p>Unlock deep insights from your Spotify playlists</p>
     </div>
-
     <div class="search-card">
         <label class="input-label">Spotify Playlist URL</label>
         <div class="input-wrapper">
@@ -744,9 +743,7 @@
         <button class="analyze-btn" id="analyzeBtn">Analyze Playlist</button>
         <button class="analyze-btn dashboard-btn" id="dashboardBtn">View My Listening Insights</button>
     </div>
-
     <div class="error" id="error"></div>
-
     <div class="loading" id="loading">
         <div class="spinner-wrapper">
             <div class="spinner"></div>
@@ -755,15 +752,16 @@
         <p class="loading-text">Analyzing your playlist</p>
         <p class="loading-subtext">This might take a moment...</p>
     </div>
+</div>
 
-    <div class="results extra-wide-container" id="results" style="margin-bottom: 40px;">
-        <div class="playlist-header" id="playlistInfo"></div>
-        <div class="stats-grid" id="statsGrid"></div>
-        
-        <div class="section-card">
-            <h3 class="section-title">🎵 All Tracks</h3>
-            <div id="allTracks" class="track-list"></div>
-        </div>
+<!-- Results moved OUTSIDE the container -->
+<div class="results extra-wide-container" id="results" style="margin-bottom: 40px;">
+    <div class="playlist-header" id="playlistInfo"></div>
+    <div class="stats-grid" id="statsGrid"></div>
+    
+    <div class="section-card">
+        <h3 class="section-title">🎵 All Tracks</h3>
+        <div id="allTracks" class="track-list"></div>
     </div>
 </div>
 
@@ -780,7 +778,7 @@
     <div class="insights-summary" id="insightsSummary"></div>
 </div>
 <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top">↑</button>
-<script>
+    <script>
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
     
     let accessToken = null;
