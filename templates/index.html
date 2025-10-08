@@ -49,11 +49,10 @@
         .wide-container {
             max-width: 1600px;
         }
-        
-        .extra-wide-container {
-          max-width: none;
-         width: 100vw;
-       }
+       .extra-wide-container {
+            max-width: 100%;
+             width: 100%;
+        }
 
         .header {
             text-align: center;
@@ -684,6 +683,39 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(29, 185, 84, 0.5);
         }
+             /* Scroll to Top Button */
+       .scroll-top-btn {
+               position: fixed;
+               bottom: 30px;
+               right: 30px;
+               width: 55px;
+               height: 55px;
+               background: linear-gradient(135deg, #1DB954, #1ed760);
+               border: none;
+               border-radius: 50%;
+               color: #000;
+               font-size: 1.5rem;
+               cursor: pointer;
+               opacity: 0;
+               visibility: hidden;
+               transition: all 0.3s ease;
+               box-shadow: 0 8px 25px rgba(29, 185, 84, 0.4);
+               z-index: 1000;
+               display: flex;
+               align-items: center;
+               justify-content: center;
+            }
+        .scroll-top-btn.visible {
+                opacity: 1;
+                visibility: visible;
+     }
+        .scroll-top-btn:hover {
+                   transform: translateY(-5px);
+                   box-shadow: 0 12px 35px rgba(29, 185, 84, 0.6);
+  }
+        .scroll-top-btn:active {
+                transform: translateY(-2px);
+   }
     </style>
 </head>
 <body>
@@ -745,7 +777,7 @@
     
     <div class="insights-summary" id="insightsSummary"></div>
 </div>
-
+<button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top">↑</button>
 <script>
     const BACKEND_URL = 'https://spotify-playlist-analyzer-production.up.railway.app';
     
@@ -758,6 +790,23 @@
             accessToken = urlParams.get('access_token');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
+         // Scroll to top functionality 
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+    
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+            scrollTopBtn?.classList.add('visible');
+        } else {
+            scrollTopBtn?.classList.remove('visible');
+        }
+    });
+    
+    scrollTopBtn?.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
     });
 
     document.getElementById('analyzeBtn')?.addEventListener('click', analyzePlaylist);
