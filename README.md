@@ -28,8 +28,10 @@ Connect your Spotify account to unlock:
 - Top artists, tracks, and genres
 - Personalized listening summaries
 
- **NOTE**: 
-- View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
+---
+
+**NOTE**: 
+View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
 
 ---
 
