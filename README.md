@@ -2,7 +2,8 @@
 
 # **🎧 Spotify Playlist Analyzer**
 
-A sleek web app that lets you analyze your Spotify playlists and uncover insights about your music taste, top artists, and listening patterns — all wrapped in a stunning UI.
+A sleek web application for analyzing Spotify playlists and uncovering insights about music taste, top artists, and listening patterns.
+
 
 ---
 
@@ -11,25 +12,25 @@ A sleek web app that lets you analyze your Spotify playlists and uncover insight
 ---
 ## Features:
 
-✅ **Playlist Analysis**  
+✅ **Playlist Analysis  (No login Required)** 
 
-Paste any Spotify playlist URL to view:
-- Total tracks  
-- Average popularity  
-- Total duration  
-- Most popular track  
-- Most common artist  
-
+Analyze any public Spotify playlist to view:
+- Track count & total duration
+- Average popularity score
+- Most popular track
+- Most frequent artist
 
 
 
-✅ **User Dashboard (Spotify Login Required)**  
 
-After logging in with Spotify, view personalized insights such as:
-- Top artists, tracks, and genres  
-- Listening summaries based on your history   
+✅ **Personal Insights (Spotify Login Required)**  
 
+Connect your Spotify account to unlock:
+- Top artists, tracks, and genres
+- Personalized listening summaries
 
+** NOTE**: 
+- View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
 
 ---
 
@@ -45,6 +46,3 @@ Backend: Python with Flask
 
 API: Spotify Web API for retrieving user and playlist data
 
-## NOTE: 
-- View My Listening Insights works only for allowed users as it requires spotify's Authorization since app is in deployment mode.
-- Analze playlist works for public playlists if it is private you need to login.
