@@ -5,7 +5,7 @@ Analyze your Spotify playlists and discover deep insights about your music taste
 ---
 <img width="1920" height="859" alt="image" src="https://github.com/user-attachments/assets/e42661c4-450c-4cdb-b86a-38fbb6f08a50" />
 
-**Link:https://spotify-playlist-analyzer-ira.vercel.app/** 
+**Link:** https://spotify-playlist-analyzer-ira.vercel.app/
 ---
 
 ## Features
