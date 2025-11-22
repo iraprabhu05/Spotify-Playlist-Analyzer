@@ -2,7 +2,8 @@
 
 Analyze your Spotify playlists and discover deep insights about your music taste.
 
-![Spotify Playlist Analyzer Dashboard](https://github.com/user-attachments/assets/de0f461e-c84d-4ba6-9c32-a3b1619e9f30)
+<img width="1920" height="859" alt="image" src="https://github.com/user-attachments/assets/e42661c4-450c-4cdb-b86a-38fbb6f08a50" />
+
 
 ## Features
 
